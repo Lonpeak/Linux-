@@ -86,7 +86,7 @@ Ceph 客户端必须联系 Ceph Monitor并获取集群Map的，当前副本，�
 
 Ceph 集群可以仅使用单个Monitor来正常运行，但是只有单个Monitor的 Ceph 集群存在单点故障：如果Monitor出现故障，Ceph 客户端将无法读取或写入数据数据到集群。
 
-Ceph 利用Monitor集群来提高可靠性和容错能力。但是，当使用Monitor集群时，集群中的一个或多个Monitor可能会由于延迟或其他故障而落后。Ceph 通过要求多个Monitor实例就集群状态达成一致来减轻这些负面影响。为了在Monitor之间就集群状态达成共识，Ceph 使用 Paxos 算法和大多数Monitor（例如，1个；包含3个Monitor的集群中的两个Monitor；包含5个Monitor的集群中的3个监视器；包含6个监视器的集群中的4个监视器）。
+Ceph 利用Monitor集群来提高可靠性和容错能力。但是，当使用Monitor集群时，集群中的一个或多个Monitor可能会由于延迟或其他故障而落后。Ceph 通过要求多个Monitor实例就集群状态达成一致来减轻这些负面影响。为了在Monitor之间就集群状态达成共识，Ceph 使用 Paxos 算法和大多数Monitor达成共识（例如，1个；包含3个Monitor的集群中的两个Monitor；包含5个Monitor的集群中的3个监视器；包含6个监视器的集群中的4个监视器）。
 
 **高可用性身份验证：**
 
