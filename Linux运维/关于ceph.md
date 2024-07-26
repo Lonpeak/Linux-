@@ -150,21 +150,55 @@ Ceph 监视器和 OSD 共享一个secret，这意味着客户端，可以使用*
 
 #### 3.动态集群管理
 
+在可扩展性和高可用性部分，我们解释了 Ceph 如何使用 CRUSH、集群拓扑和智能守护进程来扩展和维护高可用性。 Ceph 设计的关键是自主、自我修复和智能的 Ceph OSD 守护进程。让我们更深入地了解 CRUSH 如何使现代云存储基础设施能够放置数据、重新平衡集群、自适应地放置和平衡数据以及从故障中恢复。
 
+**关于Pools：**
 
+Ceph 存储系统支持"Pool"的概念，它是用于存储对象的逻辑分区。
 
+Ceph 客户端从 Ceph Monitor 检索集群Map，并将 RADOS 对象写入池。 Ceph 将数据放置在池中的方式由池的 `size` 或copy数量、CRUSH 规则以及池中放置组的数量决定。
 
+![](/Users/lonpeak/Desktop/Linux运维/运维jpg/8.webp)
 
+Pools至少设置以下参数：
 
+> - 对象的所有权/访问权限
+> - PG的数量，以及
+> - 使用的 CRUSH 规则
 
+**Map PG to OSDS：**
 
+每个池中都有许多放置组 (PG)。 CRUSH 动态地将 PG Map to OSD。当 Ceph 客户端存储对象时，CRUSH 将每个 RADOS 对象映射到一个 PG。
 
+RADOS 对象到 PG 的这种映射，在 Ceph OSD 守护进程和 Ceph 客户端之间，实现了抽象和间接层。当内部拓扑发生变化时，Ceph 存储集群必须能够自适应地增长（或收缩）和重新分配数据。
 
+如果 Ceph 客户端“知道”，哪些 Ceph OSD 守护进程正在存储哪些对象，那么 Ceph 客户端和 Ceph OSD 守护进程之间就会存在紧密耦合。但 Ceph 避免了任何此类紧密耦合。相反，CRUSH 算法将每个 RADOS 对象映射到一个置放组，然后将每个置放组映射到一个或多个 Ceph OSD 守护进程。当新的 Ceph OSD 守护进程及其底层 OSD 设备上线时，这种“间接层”允许 Ceph 动态重新平衡。下图显示了 CRUSH 算法如何将对象映射到置放群组，以及如何将置放群组映射到 OSD。
 
+![](/Users/lonpeak/Desktop/Linux运维/运维jpg/9.webp)
 
+客户端使用其集群Map的副本和 CRUSH 算法来精确计算，在读取或写入特定对象时将使用哪个 OSD。
 
+**计算PG IDs：**
 
+当 Ceph 客户端绑定到 Ceph Monitor 时，它会检索最新版本的 Cluster Map。当客户端配备了集群映射的copy时，它就知道集群中的所有Monitor、OSD 和元MDS。然而，即使配备了最新版本的集群Map的copy，客户端也不知道有关对象位置的任何信息。
 
+对象位置必须由计算得出：
+
+> 客户端只需要`Object ID` 和`Name of Pools`即可计算对象位置。
+>
+> Ceph 将数据存储在命名池中（例如“liverpool”）。当客户端存储命名对象（例如“john”、“paul”、“george”或“ringo”）时，它会使用对象名称、哈希码、池中 PG 的数量来计算PG和Name of Pools。 Ceph 客户端使用以下步骤来计算 PG ID。
+>
+> 1. 客户端输入Name of Pools和Object ID。 （例如：example: pool = "liverpool" and object-id = "john"）
+> 2. Ceph 对Object ID 进行哈希处理。
+> 3. Ceph 计算哈希值，以 PG 数量为模（例如： `58` ），以获得 PG ID。
+> 4. Ceph 使用池名称来检索池 ID：（例如："liverpool"= `4` ）
+> 5. Ceph 将池 ID 添加到 PG ID 前面（例如： `4.58` ）
+>
+> 计算对象位置比，通过聊天会话，执行对象位置查询，要快得多。 CRUSH 算法允许客户端计算，Object的预期存储位置，并使客户端能够联系，`主 OSD` 来存储或检索Object。
+
+对等互联和SETS：
+
+> 
 
 
 
