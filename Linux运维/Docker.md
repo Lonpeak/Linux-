@@ -57,9 +57,59 @@ docker compose up -d #创建多个容器编排
 
 ### Docker Compose
 
+> - 如果你是安装的桌面版 Docker，不需要额外安装，已经包含了。
+> - 如果是没图形界面的服务器版 Docker，你需要单独安装 [安装文档](https://docs.docker.com/compose/install/#install-compose-on-linux-systems)
+> - 运行`docker-compose`检查是否安装成功
+>
+> 在`docker-compose.yml` 文件所在目录，执行：`docker-compose up`就可以跑起来了。
+> 命令参考：https://docs.docker.com/compose/reference/up/
+>
+> 在后台运行只需要加一个 -d 参数`docker-compose up -d`
+> 查看运行状态：`docker-compose ps`
+> 停止运行：`docker-compose stop`
+> 重启：`docker-compose restart`
+> 重启单个服务：`docker-compose restart service-name`
+> 进入容器命令行：`docker-compose exec service-name sh`
+> 查看容器运行log：`docker-compose logs [service-name]`
+
+### 备份和迁移数据
+
+> 容器中的数据，如果没有用挂载目录，删除容器后就会丢失数据。
+> 前面我们已经讲解了如何 [挂载目录](doc:kze7f0ZR)
+> 如果你是用`bind mount`直接把宿主机的目录挂进去容器，那迁移数据很方便，直接复制目录就好了
+> 如果你是用`volume`方式挂载的，由于数据是由容器创建和管理的，需要用特殊的方式把数据弄出来。
+>
+> ***备份：***
+>
+> - 运行一个 ubuntu 的容器，挂载需要备份的 volume 到容器，并且挂载宿主机目录到容器里的备份目录。
+> - 运行 tar 命令把数据压缩为一个文件
+> - 把备份文件复制到需要导入的机器
+>
+> ***导入：***
+>
+> - 运行 ubuntu 容器，挂载容器的 volume，并且挂载宿主机备份文件所在目录到容器里
+> - 运行 tar 命令解压备份文件到指定目录
+>
+> ***备份 MongoDB 数据演示***
+>
+> - 运行一个 mongodb，创建一个名叫`mongo-data`的 volume 指向容器的 /data 目录
+>   `docker run -p 27018:27017 --name mongo -v mongo-data:/data -d mongo:4.4`
+> - 运行一个 Ubuntu 的容器，挂载`mongo`容器的所有 volume，映射宿主机的 backup 目录到容器里面的 /backup 目录，然后运行 tar 命令把数据压缩打包
+>   `docker run --rm --volumes-from mongo -v d:/backup:/backup ubuntu tar cvf /backup/backup.tar /data/`
+>
+> 最后你就可以拿着这个 backup.tar 文件去其他地方导入了。
+>
+> ***恢复 Volume 数据演示***
+>
+> - 运行一个 ubuntu 容器，挂载 mongo 容器的所有 volumes，然后读取 /backup 目录中的备份文件，解压到 /data/ 目录
+>   `docker run --rm --volumes-from mongo -v d:/backup:/backup ubuntu bash -c "cd /data/ && tar xvf /backup/backup.tar --strip 1"`
+>
+> ```
+> 注意，volumes-from 指定的是容器名字
+> strip 1 表示解压时去掉前面1层目录，因为压缩时包含了绝对路径
+> ```
+>
 > 
-
-
 
 
 
